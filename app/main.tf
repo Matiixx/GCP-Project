@@ -65,3 +65,23 @@ resource "google_storage_bucket" "tempfileshare_storage_bucket" {
     max_age_seconds = 3600
   }
 }
+
+resource "google_cloud_run_v2_service" "tempfileshare_cloud_run_service" {
+  name = "tempfileshare-cloud-run-service"
+  location = "europe-central2"
+  client   = "terraform"
+
+  template {
+    containers{
+      image = "docker.io/cichostepski/tempfile-share:latest"
+    }
+  }
+}
+
+
+resource "google_cloud_run_v2_service_iam_member" "noauth" {
+  location = google_cloud_run_v2_service.tempfileshare_cloud_run_service.location
+  name     = google_cloud_run_v2_service.tempfileshare_cloud_run_service.name
+  role     = "roles/run.invoker"
+  member   = "allUsers"
+}
