@@ -33,7 +33,11 @@ export default function Home() {
 
     const config = { headers: { "content-type": "multipart/form-data" } };
     axios
-      .post(`${process.env.NEXT_PUBLIC_BACKEND_URL}/upload`, formData, config)
+      .post(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL_PROD}/upload`,
+        formData,
+        config
+      )
       .then(({ data }) => {
         setCode(data.code);
       });
@@ -44,17 +48,17 @@ export default function Home() {
     if (!code) return;
 
     return axios
-      .get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/${code}`)
+      .get(`${process.env.NEXT_PUBLIC_BACKEND_URL_PROD}/${code}`)
       .then(({ data }) => {
-        const url = window.URL.createObjectURL(new Blob([data.file]));
+        const url = data.file;
         const fileName = data.file.split("/").pop();
         const a = document.createElement("a");
         a.href = url;
         a.download = fileName;
+        a.target = "_blank";
         document.body.appendChild(a);
         a.click();
         a.remove();
-        window.URL.revokeObjectURL(url);
       });
   };
 
