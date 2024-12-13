@@ -73,7 +73,12 @@ resource "google_cloud_run_v2_service" "tempfileshare_cloud_run_service" {
 
   template {
     containers{
-      image = "docker.io/cichostepski/tempfile-share:0.0.2"
+      image = "docker.io/cichostepski/tempfile-share:0.0.3"
+
+      env {
+        name = "NEXT_PUBLIC_BACKEND_URL_PROD"
+        value = "https://tempfileshare-api-507534501976.europe-central2.run.app"
+      }
     }
   }
 }
