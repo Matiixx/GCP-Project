@@ -85,3 +85,62 @@ resource "google_cloud_run_v2_service_iam_member" "noauth" {
   role     = "roles/run.invoker"
   member   = "allUsers"
 }
+
+resource "google_secret_manager_secret" "firestore_secret" {
+  secret_id = "firestore-credentials"
+  
+  replication {
+    user_managed {
+      replicas {
+        location = "europe-central2"
+      }
+    }
+  }
+}
+
+resource "google_secret_manager_secret_version" "firestore_secret_version" {
+  secret = google_secret_manager_secret.firestore_secret.id
+  
+  secret_data = file("secret.json")
+}
+
+resource "google_secret_manager_secret_iam_member" "cloud_run_access" {
+  secret_id = google_secret_manager_secret.firestore_secret.id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${google_service_account.tempfileshare_service_account.email}"
+}
+
+resource "google_cloud_run_v2_service" "tempfileshare_api" {
+  name     = "tempfileshare-api"
+  location = "europe-central2"
+
+  template {
+      containers {
+        image = "docker.io/cichostepski/tempfile-share-api:latest"
+        
+        env {
+          name = "SERVICE_ACCOUNT_JSON"
+          value_source {
+          secret_key_ref {
+            secret  = google_secret_manager_secret.firestore_secret.secret_id
+            version = "latest"
+          }
+        }
+        }
+      }
+  }
+}
+
+resource "google_cloud_run_v2_service_iam_member" "noauth-api" {
+  location = google_cloud_run_v2_service.tempfileshare_api.location
+  name     = google_cloud_run_v2_service.tempfileshare_api.name
+  role     = "roles/run.invoker"
+  member   = "allUsers"
+}
+
+resource "google_secret_manager_secret_iam_member" "secret_accessor" {
+  project   = "tempfileshare-444110"
+  secret_id = google_secret_manager_secret.firestore_secret.secret_id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:507534501976-compute@developer.gserviceaccount.com"
+}

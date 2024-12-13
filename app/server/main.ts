@@ -3,12 +3,11 @@ import dotenv from "dotenv";
 import cors from "cors";
 import fileUpload from "express-fileupload";
 
-import { initializeApp, cert, type ServiceAccount } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import { Storage } from "@google-cloud/storage";
 
-import secret from "./secret";
 import { getUniqueCode } from "./utils";
+import { initFirebase } from "./initalizeApp";
 
 dotenv.config();
 
@@ -17,15 +16,7 @@ const port = process.env.PORT;
 app.use(cors({ origin: "*" }));
 app.use(fileUpload({ useTempFiles: true, tempFileDir: "/tmp/" }));
 
-initializeApp({
-  credential: cert(secret as ServiceAccount),
-});
-
-const db = getFirestore("tempfileshare-firestore");
-const storage = new Storage({
-  projectId: "tempfileshare-444110",
-  credentials: secret,
-});
+const { db, storage } = initFirebase();
 
 app.get("/", (req, res) => {
   res.send("Express + TypeScript Server");
