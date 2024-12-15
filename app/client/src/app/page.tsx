@@ -10,6 +10,7 @@ export default function Home() {
 
   const [duration, setDuration] = useState(1);
   const [code, setCode] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   useMovingBackground(backgroundRef);
 
@@ -24,6 +25,7 @@ export default function Home() {
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setIsLoading(true);
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -40,6 +42,9 @@ export default function Home() {
       )
       .then(({ data }) => {
         setCode(data.code);
+      })
+      .finally(() => {
+        setIsLoading(false);
       });
   };
 
@@ -94,8 +99,9 @@ export default function Home() {
               <button
                 className="bg-blue-500 hover:bg-blue-600 text-white rounded-lg px-4 py-2"
                 onClick={handleInputClick}
+                disabled={isLoading}
               >
-                Upload
+                {isLoading ? "Uploading..." : "Upload"}
               </button>
 
               {code && (
