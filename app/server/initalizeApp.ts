@@ -1,6 +1,7 @@
 import * as admin from "firebase-admin";
 import { getFirestore } from "firebase-admin/firestore";
 import { Storage } from "@google-cloud/storage";
+import { v1 } from "@google-cloud/scheduler";
 
 export const initFirebase = () => {
   const serviceAccount = JSON.parse(process.env.SERVICE_ACCOUNT_JSON ?? "{}");
@@ -16,5 +17,10 @@ export const initFirebase = () => {
     credentials: serviceAccount,
   });
 
-  return { admin, db, storage };
+  const schedulerClient = new v1.CloudSchedulerClient({
+    projectId: "tempfileshare-444110",
+    credentials: serviceAccount,
+  });
+
+  return { admin, db, storage, schedulerClient };
 };

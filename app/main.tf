@@ -121,7 +121,7 @@ resource "google_cloud_run_v2_service" "tempfileshare_api" {
 
   template {
       containers {
-        image = "docker.io/cichostepski/tempfile-share-api:latest"
+        image = "docker.io/cichostepski/tempfile-share-api:0.0.5"
         
         env {
           name = "SERVICE_ACCOUNT_JSON"
@@ -148,4 +148,20 @@ resource "google_secret_manager_secret_iam_member" "secret_accessor" {
   secret_id = google_secret_manager_secret.firestore_secret.secret_id
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:507534501976-compute@developer.gserviceaccount.com"
+}
+
+resource "google_project_service" "scheduler" {
+  service            = "cloudscheduler.googleapis.com"
+  disable_on_destroy = false
+}
+
+resource "google_project_service" "pubsub" {
+  service            = "pubsub.googleapis.com"
+  disable_on_destroy = false
+}
+
+resource "google_project_iam_member" "cloud_scheduler_admin" {
+  role   = "roles/cloudscheduler.admin"
+  member = "serviceAccount:${google_service_account.tempfileshare_service_account.email}"
+  project = "tempfileshare-444110"
 }
