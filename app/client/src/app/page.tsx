@@ -90,6 +90,7 @@ export default function Home() {
                 value={duration}
                 onChange={handleDurationChange}
               >
+                <option value={3 / 60}>3 minutes</option>
                 <option value="0.5">30 minutes</option>
                 <option value="1">1 hour</option>
                 <option value="2">2 hours</option>

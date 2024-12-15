@@ -28,38 +28,18 @@ app.get("/", (_req, res) => {
 const FILE_CODES_COLLECTION = "files-codes";
 const BUCKET_NAME = "tempfileshare-storage-bucket";
 
-// export const deleteScheduledFiles = functions.pubsub
-//   .schedule('every 1 hours')
-//   .onRun(async (context) => {
+function getDelayedCronSchedule(delayHours: number): string {
+  const scheduledTime = new Date();
 
-//     // Find files that are past their expiration time
-//     const now = admin.firestore.Timestamp.now();
-//     const expiredFilesQuery = await db.collection(FILE_CODES_COLLECTION)
-//       .where('expiresAt', '<=', now)
-//       .get();
+  const totalMinutes = Math.floor(delayHours * 60);
 
-//     const batch = db.batch();
-//     const deletePromises = expiredFilesQuery.docs.map(async (doc) => {
-//       const fileData = doc.data();
-//       const code = doc.id;
+  scheduledTime.setMinutes(scheduledTime.getMinutes() + totalMinutes);
 
-//       try {
-//         // Delete file from Firebase Storage
-//         await storage.bucket(BUCKET_NAME).file(`${code}/${fileData.fileName}`).delete();
+  const minutes = scheduledTime.getMinutes();
+  const hours = scheduledTime.getHours();
 
-//         // Delete document from Firestore
-//         batch.delete(doc.ref);
-//       } catch (error) {
-//         console.error(`Error deleting file ${code}:`, error);
-//       }
-//     });
-
-//     // Wait for all deletions to complete
-//     await Promise.all(deletePromises);
-
-//     // Commit the batch of Firestore deletions
-//     return batch.commit();
-//   });
+  return `${minutes} ${hours} * * *`;
+}
 
 async function createSchedulerJob(code: string, delay: number) {
   const projectId = process.env.PROJECT_ID ?? "";
@@ -74,7 +54,7 @@ async function createSchedulerJob(code: string, delay: number) {
       body: Buffer.from(JSON.stringify({ code })),
       headers: { "Content-Type": "application/json" },
     },
-    schedule: "* * * * *",
+    schedule: getDelayedCronSchedule(delay),
     timeZone: "UTC",
     name: jobName,
   } as const;
@@ -136,7 +116,7 @@ app.post("/upload", async (req, res) => {
     return;
   }
 
-  const duration = parseInt(req.body.duration ?? "1", 10);
+  const duration = parseFloat(req.body.duration ?? "1");
   const fileName = file.name;
   const filePath = file.tempFilePath;
 

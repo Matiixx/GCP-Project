@@ -121,7 +121,7 @@ resource "google_cloud_run_v2_service" "tempfileshare_api" {
 
   template {
       containers {
-        image = "docker.io/cichostepski/tempfile-share-api:0.0.5"
+        image = "docker.io/cichostepski/tempfile-share-api:0.0.8"
         
         env {
           name = "SERVICE_ACCOUNT_JSON"
