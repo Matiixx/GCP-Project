@@ -10,7 +10,9 @@ export default function Home() {
 
   const [duration, setDuration] = useState(1);
   const [code, setCode] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState<"upload" | "download" | null>(
+    null
+  );
 
   useMovingBackground(backgroundRef);
 
@@ -25,7 +27,7 @@ export default function Home() {
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setIsLoading(true);
+    setIsLoading("upload");
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -44,13 +46,15 @@ export default function Home() {
         setCode(data.code);
       })
       .finally(() => {
-        setIsLoading(false);
+        setIsLoading(null);
       });
   };
 
   const handleCodeDownload = () => {
     const code = codeInputRef.current?.value;
     if (!code) return;
+
+    setIsLoading("download");
 
     return axios
       .get(`${process.env.NEXT_PUBLIC_BACKEND_URL_PROD}/${code}`)
@@ -64,6 +68,9 @@ export default function Home() {
         document.body.appendChild(a);
         a.click();
         a.remove();
+      })
+      .finally(() => {
+        setIsLoading(null);
       });
   };
 
@@ -99,9 +106,9 @@ export default function Home() {
               <button
                 className="bg-blue-500 hover:bg-blue-600 text-white rounded-lg px-4 py-2"
                 onClick={handleInputClick}
-                disabled={isLoading}
+                disabled={isLoading === "upload"}
               >
-                {isLoading ? "Uploading..." : "Upload"}
+                {isLoading === "upload" ? "Uploading..." : "Upload"}
               </button>
 
               {code && (
@@ -127,8 +134,9 @@ export default function Home() {
               <button
                 className="bg-blue-500 hover:bg-blue-600 text-white rounded-lg px-4 py-2"
                 onClick={handleCodeDownload}
+                disabled={isLoading === "download"}
               >
-                Download
+                {isLoading === "download" ? "Downloading..." : "Download"}
               </button>
             </div>
           </div>
