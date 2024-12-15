@@ -13,6 +13,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@google-cloud/monitoring": "^4.1.0",
     "@google-cloud/scheduler": "^4.3.0",
     "@google-cloud/storage": "^7.14.0",
     "cors": "^2.8.5",

@@ -1,14 +1,20 @@
-import * as admin from "firebase-admin";
+import * as adminFb from "firebase-admin";
 import { getFirestore } from "firebase-admin/firestore";
 import { Storage } from "@google-cloud/storage";
 import { v1 } from "@google-cloud/scheduler";
+import { MetricServiceClient } from "@google-cloud/monitoring";
+import dotenv from "dotenv";
 
-export const initFirebase = () => {
+dotenv.config();
+
+const initFirebase = () => {
   const serviceAccount = JSON.parse(process.env.SERVICE_ACCOUNT_JSON ?? "{}");
 
-  if (admin.apps.length === 0) {
-    admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount as admin.ServiceAccount),
+  if (adminFb.apps.length === 0) {
+    adminFb.initializeApp({
+      credential: adminFb.credential.cert(
+        serviceAccount as adminFb.ServiceAccount
+      ),
     });
   }
   const db = getFirestore("tempfileshare-firestore");
@@ -22,5 +28,15 @@ export const initFirebase = () => {
     credentials: serviceAccount,
   });
 
-  return { admin, db, storage, schedulerClient };
+  const metricServiceClient = new MetricServiceClient({
+    projectId: "tempfileshare-444110",
+    credentials: serviceAccount,
+  });
+
+  return { admin: adminFb, db, storage, schedulerClient, metricServiceClient };
 };
+
+const { admin, db, storage, schedulerClient, metricServiceClient } =
+  initFirebase();
+
+export { admin, db, storage, schedulerClient, metricServiceClient };

@@ -165,3 +165,37 @@ resource "google_project_iam_member" "cloud_scheduler_admin" {
   member = "serviceAccount:${google_service_account.tempfileshare_service_account.email}"
   project = "tempfileshare-444110"
 }
+
+resource "google_monitoring_metric_descriptor" "file_size_metric" {
+  project      = "tempfileshare-444110"
+  
+  type         = "custom.googleapis.com/file_size"
+  display_name = "File Size"
+  description  = "Tracks the size of uploaded files in bytes."
+  
+  metric_kind  = "GAUGE"
+  value_type   = "INT64"
+
+  labels {
+    key         = "file_type"
+    value_type  = "STRING"
+    description = "Type of the uploaded file."
+  }
+}
+
+resource "google_monitoring_metric_descriptor" "delay_duration_metric" {
+  project      = "tempfileshare-444110"
+  
+  type         = "custom.googleapis.com/delay_duration"
+  display_name = "User Delay Duration"
+  description  = "Tracks the duration of delays picked by users in hours."
+  
+  metric_kind  = "GAUGE"
+  value_type   = "DOUBLE"
+}
+
+resource "google_project_iam_member" "metric_writer_role" {
+  project = "tempfileshare-444110"
+  role    = "roles/monitoring.metricWriter"
+  member = "serviceAccount:${google_service_account.tempfileshare_service_account.email}"
+}

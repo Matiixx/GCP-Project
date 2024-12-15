@@ -3,12 +3,14 @@ import dotenv from "dotenv";
 import cors from "cors";
 import fileUpload from "express-fileupload";
 
-import { getFirestore } from "firebase-admin/firestore";
-import { Storage } from "@google-cloud/storage";
-import { CloudSchedulerClient } from "@google-cloud/scheduler";
-
-import { getUniqueCode } from "./utils";
-import { initFirebase } from "./initalizeApp";
+import {
+  createSchedulerJob,
+  deleteFolder,
+  getUniqueCode,
+  writeDelayMetric,
+  writeFileSizeMetric,
+} from "./utils";
+import { db, storage, schedulerClient } from "./initalizeApp";
 
 dotenv.config();
 
@@ -19,76 +21,12 @@ app.use(fileUpload({ useTempFiles: true, tempFileDir: "/tmp/" }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-const { db, storage, schedulerClient } = initFirebase();
-
 app.get("/", (_req, res) => {
   res.send("Express + TypeScript Server");
 });
 
 const FILE_CODES_COLLECTION = "files-codes";
 const BUCKET_NAME = "tempfileshare-storage-bucket";
-
-function getDelayedCronSchedule(delayHours: number): string {
-  const scheduledTime = new Date();
-
-  const totalMinutes = Math.floor(delayHours * 60);
-
-  scheduledTime.setMinutes(scheduledTime.getMinutes() + totalMinutes);
-
-  const minutes = scheduledTime.getMinutes();
-  const hours = scheduledTime.getHours();
-
-  return `${minutes} ${hours} * * *`;
-}
-
-async function createSchedulerJob(code: string, delay: number) {
-  const projectId = process.env.PROJECT_ID ?? "";
-  const locationId = process.env.LOCATION_ID ?? "";
-  const locationPath = schedulerClient.locationPath(projectId, locationId);
-  const jobName = `${locationPath}/jobs/delete-file-job-${code}`;
-
-  const job = {
-    httpTarget: {
-      uri: "https://tempfileshare-api-507534501976.europe-central2.run.app/deleteFile",
-      httpMethod: "POST",
-      body: Buffer.from(JSON.stringify({ code })),
-      headers: { "Content-Type": "application/json" },
-    },
-    schedule: getDelayedCronSchedule(delay),
-    timeZone: "UTC",
-    name: jobName,
-  } as const;
-
-  const request = {
-    parent: schedulerClient.locationPath(projectId, locationId),
-    job,
-  };
-
-  const [response] = await schedulerClient.createJob(request);
-  console.log(`Created job: ${response.name}`);
-}
-
-async function deleteFolder(bucketName: string, folderPrefix: string) {
-  try {
-    const bucket = storage.bucket(bucketName);
-
-    const [files] = await bucket.getFiles({ prefix: folderPrefix });
-
-    if (files.length === 0) {
-      console.log(`No files found in folder: ${folderPrefix}`);
-      return;
-    }
-
-    const deletePromises = files.map((file) => file.delete());
-
-    await Promise.all(deletePromises);
-
-    console.log(`Deleted ${files.length} files in folder: ${folderPrefix}`);
-  } catch (error) {
-    console.error("Error deleting folder:", error);
-    throw error;
-  }
-}
 
 app.post("/deleteFile", async (req, res) => {
   const code = req.body?.code;
@@ -118,6 +56,7 @@ app.post("/upload", async (req, res) => {
 
   const duration = parseFloat(req.body.duration ?? "1");
   const fileName = file.name;
+  const fileExtension = file.name.split(".").pop();
   const filePath = file.tempFilePath;
 
   const code = await getUniqueCode(db, FILE_CODES_COLLECTION);
@@ -136,6 +75,8 @@ app.post("/upload", async (req, res) => {
   try {
     await transaction;
     await createSchedulerJob(code, duration);
+    await writeFileSizeMetric(file.size, fileExtension ?? "");
+    await writeDelayMetric(duration);
     res.send({ code });
   } catch (error) {
     console.error("Transaction failed: ", error);
