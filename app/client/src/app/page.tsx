@@ -10,6 +10,7 @@ export default function Home() {
 
   const [duration, setDuration] = useState(1);
   const [code, setCode] = useState("");
+  const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState<"upload" | "download" | null>(
     null
   );
@@ -51,6 +52,7 @@ export default function Home() {
   };
 
   const handleCodeDownload = () => {
+    setError("");
     const code = codeInputRef.current?.value;
     if (!code) return;
 
@@ -68,6 +70,9 @@ export default function Home() {
         document.body.appendChild(a);
         a.click();
         a.remove();
+      })
+      .catch(() => {
+        setError("Wrong code");
       })
       .finally(() => {
         setIsLoading(null);
@@ -139,6 +144,7 @@ export default function Home() {
               >
                 {isLoading === "download" ? "Downloading..." : "Download"}
               </button>
+              {error && <span className="text-red-500">{error}</span>}
             </div>
           </div>
         </main>
