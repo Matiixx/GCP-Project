@@ -58,6 +58,8 @@ resource "google_storage_bucket" "tempfileshare_storage_bucket" {
   name = "tempfileshare-storage-bucket"
   location = "europe-central2"
 
+  force_destroy = true
+
   cors {
     origin = ["*"]
     method = ["GET", "POST", "PUT", "DELETE"]
@@ -80,6 +82,9 @@ resource "google_cloud_run_v2_service" "tempfileshare_cloud_run_service" {
         value = "https://tempfileshare-api-507534501976.europe-central2.run.app"
       }
     }
+  }
+  lifecycle {
+    prevent_destroy = false
   }
 }
 
@@ -133,6 +138,10 @@ resource "google_cloud_run_v2_service" "tempfileshare_api" {
         }
         }
       }
+  }
+
+  lifecycle {
+    prevent_destroy = false
   }
 }
 
